@@ -17,61 +17,78 @@ Activate this skill when you encounter AWS SSO token expiration errors, such as:
 - "ExpiredTokenException"
 - Any AWS MCP tool failures mentioning authentication or token issues
 
-## How to Refresh
+## Critical: Find the Correct Profile First!
 
-Run the AWS CLI command to initiate SSO login:
+**Before refreshing, you MUST read `.mcp.json` to find the correct AWS profile for the failing MCP server.**
+
+Different MCP servers may use different profiles. Using the wrong profile won't fix the issue.
 
 ```bash
-aws sso login --profile <profile-name>
+# Read .mcp.json to find the profile
+cat .mcp.json
 ```
 
-**What happens:**
+Look for the `AWS_PROFILE` in the failing server's `env` section:
 
-1. Opens a browser window for SSO authentication
-2. User completes authentication in the browser
-3. Token is refreshed and cached locally
-4. Original operation can be retried
+```json
+{
+  "mcpServers": {
+    "bedrock-kb": {
+      "env": {
+        "AWS_PROFILE": "MCPServerReadAccess"
+      }
+    }
+  }
+}
+```
 
 ## Workflow
 
-When an AWS operation fails due to expired tokens:
+When an AWS MCP operation fails due to expired tokens:
 
-1. **Identify the error**: Look for token expiration messages in the error
-2. **Determine the profile**: Check which AWS profile was being used (look for `AWS_PROFILE` in MCP server config)
-3. **Run the refresh command**: `aws sso login --profile <profile-name>`
-4. **Wait for authentication**: Inform the user to complete browser authentication
+1. **Identify the failing MCP server**: Note which tool failed (e.g., `mcp__bedrock-kb__*` → server is `bedrock-kb`)
+
+2. **Read `.mcp.json`**: Find the `AWS_PROFILE` for that server
+
+3. **Run the refresh command** with the correct profile:
+   ```bash
+   aws sso login --profile <profile-from-mcp-json>
+   ```
+
+4. **Inform the user**: "Your AWS SSO session has expired. Please complete the authentication in your browser."
+
 5. **Retry the operation**: Once refreshed, retry the original AWS operation
 
-## Example Interaction
+## Example
 
-**User runs a Bedrock KB query that fails:**
+**Tool `mcp__bedrock-kb__ListKnowledgeBases` fails:**
 
 ```
 Error: Token has expired and refresh failed
 ```
 
-**You should:**
+**Steps:**
 
-1. Recognize this as an SSO expiration error
-2. Check the MCP server config for the AWS_PROFILE (e.g., `MCPServerReadAccess`)
+1. The failing server is `bedrock-kb`
+2. Read `.mcp.json`, find `bedrock-kb` has `AWS_PROFILE: "MCPServerReadAccess"`
 3. Run: `aws sso login --profile MCPServerReadAccess`
-4. Inform the user: "Your AWS SSO session has expired. I'm initiating a refresh - please complete the authentication in your browser."
-5. After success, retry the original query
+4. Wait for browser authentication
+5. Retry `ListKnowledgeBases`
 
-## Common Profiles
+## How to Refresh
 
-When working with AWS MCP servers, check their configuration for the profile name:
+```bash
+aws sso login --profile <profile-name>
+```
 
-- `MCPServerReadAccess` - Common profile for read-only MCP access
-- `default` - Default AWS profile
-- Custom profiles as configured in `~/.aws/config`
+This opens a browser window for SSO authentication. Once completed, the token is cached locally.
 
 ## Proactive Behavior
 
-- Automatically detect token expiration errors without being asked
-- Suggest refreshing when you see authentication failures
-- Remember which profile was used for retry operations
-- Keep the user informed about the authentication status
+- Automatically detect token expiration errors
+- **Always read `.mcp.json` first** to find the correct profile
+- If no profile found in config, ask the user which profile to use
+- Keep the user informed about authentication status
 
 ## Important Notes
 

@@ -56,9 +56,15 @@ npx aws-sso-mcp
 
 Initiates the AWS SSO login flow to refresh expired authentication tokens. Opens a browser window for the user to complete authentication.
 
-| Parameter | Type   | Required | Default                      | Description                           |
-| --------- | ------ | -------- | ---------------------------- | ------------------------------------- |
-| profile   | string | No       | `$AWS_PROFILE` or `"default"` | AWS profile name to refresh token for |
+| Parameter | Type   | Required | Default | Description                           |
+| --------- | ------ | -------- | ------- | ------------------------------------- |
+| profile   | string | No       | auto    | AWS profile name to refresh token for |
+
+**Profile resolution order:**
+1. Explicit `profile` parameter
+2. `$AWS_PROFILE` environment variable
+3. Most recently used SSO profile (inferred from `~/.aws/sso/cache/`)
+4. Fallback to `"default"`
 
 ## How It Works
 

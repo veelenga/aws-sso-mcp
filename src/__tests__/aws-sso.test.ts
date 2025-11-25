@@ -28,7 +28,7 @@ describe("refreshSsoToken", () => {
 
     vi.mocked(childProcess.spawn).mockReturnValue(mockProcess);
 
-    const resultPromise = refreshSsoToken("test-profile");
+    const resultPromise = refreshSsoToken("test-profile", "parameter");
 
     mockStdout.emit("data", Buffer.from("Successfully logged in"));
     mockProcess.emit("close", 0);
@@ -37,6 +37,7 @@ describe("refreshSsoToken", () => {
 
     expect(result.success).toBe(true);
     expect(result.profile).toBe("test-profile");
+    expect(result.profileSource).toBe("parameter");
     expect(result.message).toContain("Successfully refreshed");
   });
 
@@ -53,7 +54,7 @@ describe("refreshSsoToken", () => {
 
     vi.mocked(childProcess.spawn).mockReturnValue(mockProcess);
 
-    refreshSsoToken("my-profile");
+    refreshSsoToken("my-profile", "mcp_config");
 
     expect(childProcess.spawn).toHaveBeenCalledWith(
       "aws",
@@ -77,7 +78,7 @@ describe("refreshSsoToken", () => {
 
     vi.mocked(childProcess.spawn).mockReturnValue(mockProcess);
 
-    const resultPromise = refreshSsoToken("bad-profile");
+    const resultPromise = refreshSsoToken("bad-profile", "environment");
 
     mockStderr.emit("data", Buffer.from("Profile not found"));
     mockProcess.emit("close", 1);
@@ -86,6 +87,7 @@ describe("refreshSsoToken", () => {
 
     expect(result.success).toBe(false);
     expect(result.profile).toBe("bad-profile");
+    expect(result.profileSource).toBe("environment");
     expect(result.message).toContain("failed");
     expect(result.message).toContain("Profile not found");
   });
@@ -103,13 +105,14 @@ describe("refreshSsoToken", () => {
 
     vi.mocked(childProcess.spawn).mockReturnValue(mockProcess);
 
-    const resultPromise = refreshSsoToken("test-profile");
+    const resultPromise = refreshSsoToken("test-profile", "fallback");
 
     mockProcess.emit("error", new Error("Command not found"));
 
     const result = await resultPromise;
 
     expect(result.success).toBe(false);
+    expect(result.profileSource).toBe("fallback");
     expect(result.message).toContain("Failed to start SSO login");
     expect(result.message).toContain("Command not found");
   });
@@ -128,13 +131,14 @@ describe("refreshSsoToken", () => {
 
     vi.mocked(childProcess.spawn).mockReturnValue(mockProcess);
 
-    const resultPromise = refreshSsoToken("slow-profile");
+    const resultPromise = refreshSsoToken("slow-profile", "mcp_config");
 
     vi.advanceTimersByTime(120_000);
 
     const result = await resultPromise;
 
     expect(result.success).toBe(false);
+    expect(result.profileSource).toBe("mcp_config");
     expect(result.message).toContain("timed out");
     expect(killMock).toHaveBeenCalled();
   });

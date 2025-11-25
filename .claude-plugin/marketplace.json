@@ -1,0 +1,14 @@
+{
+  "name": "mcp-aws-sso",
+  "owner": {
+    "name": "veelenga",
+    "url": "https://github.com/veelenga"
+  },
+  "plugins": [
+    {
+      "name": "mcp-aws-sso",
+      "source": "./",
+      "description": "MCP server for refreshing AWS SSO authentication tokens"
+    }
+  ]
+}

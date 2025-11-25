@@ -1,0 +1,17 @@
+{
+  "name": "mcp-aws-sso",
+  "description": "MCP server for refreshing AWS SSO authentication tokens",
+  "version": "1.0.0",
+  "author": {
+    "name": "Vitalii Elenhaupt",
+    "url": "https://github.com/veelenga"
+  },
+  "repository": "https://github.com/veelenga/mcp-aws-sso.git",
+  "homepage": "https://github.com/veelenga/mcp-aws-sso#readme",
+  "mcpServers": {
+    "aws-sso": {
+      "command": "npx",
+      "args": ["-y", "mcp-aws-sso"]
+    }
+  }
+}

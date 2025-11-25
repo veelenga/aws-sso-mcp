@@ -1,27 +1,28 @@
 # MCP AWS SSO
 
-[![CI](https://github.com/veelenga/mcp-aws-sso/actions/workflows/ci.yml/badge.svg)](https://github.com/veelenga/mcp-aws-sso/actions/workflows/ci.yml)
-[![npm version](https://badge.fury.io/js/mcp-aws-sso.svg)](https://www.npmjs.com/package/mcp-aws-sso)
-
-A Model Context Protocol (MCP) server for refreshing AWS SSO authentication tokens. Works with Claude Desktop and other MCP-compatible clients.
+A Model Context Protocol (MCP) server for refreshing AWS SSO authentication tokens. Works with Claude Desktop and Claude Code.
 
 ## Installation
 
+### Claude Code (Plugin)
+
+```bash
+/plugin marketplace add veelenga/mcp-aws-sso
+/plugin install mcp-aws-sso@mcp-aws-sso
+```
+
+Restart Claude Code, then verify with `/mcp`.
+
+### Claude Code (Manual)
+
 ```bash
 npm install -g mcp-aws-sso
+claude mcp add --scope user aws-sso mcp-aws-sso
 ```
-
-Or use directly with npx:
-
-```bash
-npx mcp-aws-sso
-```
-
-## Configuration
 
 ### Claude Desktop
 
-Add to your Claude Desktop configuration file:
+Add to your configuration file:
 
 **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
@@ -32,25 +33,16 @@ Add to your Claude Desktop configuration file:
   "mcpServers": {
     "aws-sso": {
       "command": "npx",
-      "args": ["mcp-aws-sso"]
+      "args": ["-y", "mcp-aws-sso"]
     }
   }
 }
 ```
 
-### Claude Code CLI
+### npx
 
-Add to your project's `.mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "aws-sso": {
-      "command": "npx",
-      "args": ["mcp-aws-sso"]
-    }
-  }
-}
+```bash
+npx mcp-aws-sso
 ```
 
 ## Tool
@@ -59,9 +51,9 @@ Add to your project's `.mcp.json`:
 
 Initiates the AWS SSO login flow to refresh expired authentication tokens. Opens a browser window for the user to complete authentication.
 
-| Parameter | Type   | Required | Default     | Description                            |
-| --------- | ------ | -------- | ----------- | -------------------------------------- |
-| profile   | string | No       | `"default"` | AWS profile name to refresh token for  |
+| Parameter | Type   | Required | Default     | Description                           |
+| --------- | ------ | -------- | ----------- | ------------------------------------- |
+| profile   | string | No       | `"default"` | AWS profile name to refresh token for |
 
 ## How It Works
 
@@ -69,6 +61,14 @@ Initiates the AWS SSO login flow to refresh expired authentication tokens. Opens
 2. Claude calls `refresh_aws_sso_token` with the appropriate profile
 3. A browser window opens for SSO authentication
 4. Once authenticated, the original operation can be retried
+
+## Bundled Skill
+
+The plugin includes an `aws-sso-refresh` skill that provides:
+
+- Automatic detection of token expiration errors
+- Best practices for handling AWS SSO authentication
+- Workflow guidance for retry operations
 
 ## Development
 

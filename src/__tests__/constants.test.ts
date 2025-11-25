@@ -2,7 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   SERVER_NAME,
   SERVER_VERSION,
-  DEFAULT_AWS_PROFILE,
+  AWS_PROFILE_ENV_VAR,
+  FALLBACK_AWS_PROFILE,
   TOOL_NAME,
   TOOL_DESCRIPTION,
   SSO_LOGIN_TIMEOUT_MS,
@@ -10,12 +11,13 @@ import {
 
 describe("constants", () => {
   it("has correct server metadata", () => {
-    expect(SERVER_NAME).toBe("mcp-aws-sso");
+    expect(SERVER_NAME).toBe("aws-sso-mcp");
     expect(SERVER_VERSION).toBe("1.0.0");
   });
 
-  it("has default profile set", () => {
-    expect(DEFAULT_AWS_PROFILE).toBe("default");
+  it("has AWS profile constants defined", () => {
+    expect(AWS_PROFILE_ENV_VAR).toBe("AWS_PROFILE");
+    expect(FALLBACK_AWS_PROFILE).toBe("default");
   });
 
   it("has tool name defined", () => {

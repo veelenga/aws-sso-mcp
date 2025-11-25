@@ -1,7 +1,6 @@
 ---
 name: aws-sso-refresh
 description: Automatically refresh AWS SSO authentication tokens when encountering expiration errors. Use when AWS MCP tools fail due to expired SSO sessions.
-allowed-tools: mcp__aws-sso__refresh_aws_sso_token
 ---
 
 # AWS SSO Token Refresh
@@ -18,13 +17,13 @@ Activate this skill when you encounter AWS SSO token expiration errors, such as:
 - "ExpiredTokenException"
 - Any AWS MCP tool failures mentioning authentication or token issues
 
-## Tool Usage
+## How to Refresh
 
-### refresh_aws_sso_token
+Run the AWS CLI command to initiate SSO login:
 
-Use this tool to initiate the AWS SSO login flow:
-
-- `profile`: AWS profile name (optional, defaults to "default")
+```bash
+aws sso login --profile <profile-name>
+```
 
 **What happens:**
 
@@ -38,8 +37,8 @@ Use this tool to initiate the AWS SSO login flow:
 When an AWS operation fails due to expired tokens:
 
 1. **Identify the error**: Look for token expiration messages in the error
-2. **Determine the profile**: Check which AWS profile was being used (often in environment variables or MCP server config)
-3. **Call refresh_aws_sso_token**: Use the appropriate profile name
+2. **Determine the profile**: Check which AWS profile was being used (look for `AWS_PROFILE` in MCP server config)
+3. **Run the refresh command**: `aws sso login --profile <profile-name>`
 4. **Wait for authentication**: Inform the user to complete browser authentication
 5. **Retry the operation**: Once refreshed, retry the original AWS operation
 
@@ -54,9 +53,10 @@ Error: Token has expired and refresh failed
 **You should:**
 
 1. Recognize this as an SSO expiration error
-2. Call `refresh_aws_sso_token` with the appropriate profile
-3. Inform the user: "Your AWS SSO session has expired. I'm initiating a refresh - please complete the authentication in your browser."
-4. After success, retry the original query
+2. Check the MCP server config for the AWS_PROFILE (e.g., `MCPServerReadAccess`)
+3. Run: `aws sso login --profile MCPServerReadAccess`
+4. Inform the user: "Your AWS SSO session has expired. I'm initiating a refresh - please complete the authentication in your browser."
+5. After success, retry the original query
 
 ## Common Profiles
 

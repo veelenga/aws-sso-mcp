@@ -1,11 +1,11 @@
 {
-  "name": "mcp-aws-sso",
+  "name": "aws-sso-mcp",
   "version": "1.0.0",
   "description": "MCP server for refreshing AWS SSO authentication tokens",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "mcp-aws-sso": "dist/index.js"
+    "aws-sso-mcp": "dist/index.js"
   },
   "files": [
     "dist"
@@ -20,12 +20,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/veelenga/mcp-aws-sso.git"
+    "url": "git+https://github.com/veelenga/aws-sso-mcp.git"
   },
   "bugs": {
-    "url": "https://github.com/veelenga/mcp-aws-sso/issues"
+    "url": "https://github.com/veelenga/aws-sso-mcp/issues"
   },
-  "homepage": "https://github.com/veelenga/mcp-aws-sso#readme",
+  "homepage": "https://github.com/veelenga/aws-sso-mcp#readme",
   "author": "veelenga",
   "keywords": [
     "mcp",

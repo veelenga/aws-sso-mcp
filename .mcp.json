@@ -2,7 +2,7 @@
   "mcpServers": {
     "aws-sso": {
       "command": "npx",
-      "args": ["-y", "mcp-aws-sso"]
+      "args": ["-y", "aws-sso-mcp"]
     }
   }
 }

@@ -4,7 +4,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import {
-  DEFAULT_AWS_PROFILE,
+  AWS_PROFILE_ENV_VAR,
+  FALLBACK_AWS_PROFILE,
   SERVER_NAME,
   SERVER_VERSION,
   TOOL_DESCRIPTION,
@@ -12,11 +13,17 @@ import {
 } from "./constants.js";
 import { refreshSsoToken } from "./aws-sso.js";
 
+function getDefaultProfile(): string {
+  return process.env[AWS_PROFILE_ENV_VAR] || FALLBACK_AWS_PROFILE;
+}
+
 function createServer(): McpServer {
   const server = new McpServer({
     name: SERVER_NAME,
     version: SERVER_VERSION,
   });
+
+  const defaultProfile = getDefaultProfile();
 
   server.tool(
     TOOL_NAME,
@@ -25,8 +32,8 @@ function createServer(): McpServer {
       profile: z
         .string()
         .optional()
-        .default(DEFAULT_AWS_PROFILE)
-        .describe("AWS profile name to refresh SSO token for"),
+        .default(defaultProfile)
+        .describe(`AWS profile name to refresh SSO token for (default: "${defaultProfile}")`),
     },
     async ({ profile }) => {
       const result = await refreshSsoToken(profile);

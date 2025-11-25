@@ -1,4 +1,4 @@
-# MCP AWS SSO
+# AWS SSO MCP
 
 A Model Context Protocol (MCP) server for refreshing AWS SSO authentication tokens. Works with Claude Desktop and Claude Code.
 
@@ -7,17 +7,17 @@ A Model Context Protocol (MCP) server for refreshing AWS SSO authentication toke
 ### Claude Code (Plugin)
 
 ```bash
-/plugin marketplace add veelenga/mcp-aws-sso
-/plugin install mcp-aws-sso@mcp-aws-sso
+/plugin marketplace add veelenga/aws-sso-mcp
+/plugin install aws-sso-mcp@aws-sso-mcp
 ```
 
 Restart Claude Code, then verify with `/mcp`.
 
-### Claude Code (Manual)
+### Claude Code (Manual) - WIP
 
 ```bash
-npm install -g mcp-aws-sso
-claude mcp add --scope user aws-sso mcp-aws-sso
+npm install -g aws-sso-mcp
+claude mcp add --scope user aws-sso aws-sso-mcp
 ```
 
 ### Claude Desktop
@@ -33,16 +33,21 @@ Add to your configuration file:
   "mcpServers": {
     "aws-sso": {
       "command": "npx",
-      "args": ["-y", "mcp-aws-sso"]
+      "args": ["-y", "aws-sso-mcp"],
+      "env": {
+        "AWS_PROFILE": "your-sso-profile"
+      }
     }
   }
 }
 ```
 
+The `AWS_PROFILE` environment variable sets the default profile for the refresh tool. If not specified, defaults to `"default"`.
+
 ### npx
 
 ```bash
-npx mcp-aws-sso
+npx aws-sso-mcp
 ```
 
 ## Tool
@@ -51,9 +56,9 @@ npx mcp-aws-sso
 
 Initiates the AWS SSO login flow to refresh expired authentication tokens. Opens a browser window for the user to complete authentication.
 
-| Parameter | Type   | Required | Default     | Description                           |
-| --------- | ------ | -------- | ----------- | ------------------------------------- |
-| profile   | string | No       | `"default"` | AWS profile name to refresh token for |
+| Parameter | Type   | Required | Default                      | Description                           |
+| --------- | ------ | -------- | ---------------------------- | ------------------------------------- |
+| profile   | string | No       | `$AWS_PROFILE` or `"default"` | AWS profile name to refresh token for |
 
 ## How It Works
 

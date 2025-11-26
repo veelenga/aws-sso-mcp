@@ -7,6 +7,7 @@ import {
   TOOL_NAME,
   TOOL_DESCRIPTION,
   SSO_LOGIN_TIMEOUT_MS,
+  TRUSTED_PATH_PREFIXES,
 } from "../constants.js";
 
 describe("constants", () => {
@@ -33,5 +34,12 @@ describe("constants", () => {
   it("has reasonable timeout value", () => {
     expect(SSO_LOGIN_TIMEOUT_MS).toBe(120_000);
     expect(SSO_LOGIN_TIMEOUT_MS).toBeGreaterThanOrEqual(60_000);
+  });
+
+  it("has trusted path prefixes for AWS CLI", () => {
+    expect(TRUSTED_PATH_PREFIXES).toBeInstanceOf(Array);
+    expect(TRUSTED_PATH_PREFIXES.length).toBeGreaterThan(0);
+    expect(TRUSTED_PATH_PREFIXES).toContain("/usr/local/bin");
+    expect(TRUSTED_PATH_PREFIXES).toContain("/usr/bin");
   });
 });

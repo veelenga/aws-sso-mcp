@@ -12,3 +12,17 @@ export const TOOL_DESCRIPTION =
   "Use this when AWS operations fail due to expired SSO tokens.";
 
 export const SSO_LOGIN_TIMEOUT_MS = 120_000;
+
+// Trusted directories where AWS CLI may be installed
+// Used to prevent PATH injection attacks
+export const TRUSTED_PATH_PREFIXES = [
+  // macOS / Linux standard paths
+  "/usr/local/bin",
+  "/usr/bin",
+  "/bin",
+  "/opt/homebrew/bin", // macOS ARM Homebrew
+  "/home/linuxbrew/.linuxbrew/bin", // Linux Homebrew
+  // Windows standard paths
+  "C:\\Program Files\\Amazon\\AWSCLIV2",
+  "C:\\Program Files (x86)\\Amazon\\AWSCLIV2",
+];

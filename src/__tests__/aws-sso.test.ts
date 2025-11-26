@@ -300,5 +300,23 @@ describe("refreshSsoToken", () => {
       expect(result.success).toBe(false);
       expect(result.message).toContain("AWS CLI not found in trusted location");
     });
+
+    it("rejects paths that match prefix without separator (path prefix bypass)", async () => {
+      clearAwsCliPathCache();
+      // /usr/local/bin-malicious should NOT match /usr/local/bin
+      vi.mocked(childProcess.execSync).mockReturnValue("/usr/local/bin-malicious/aws");
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.realpathSync).mockReturnValue("/usr/local/bin-malicious/aws");
+
+      const resolution: ProfileResolution = {
+        profile: "test-profile",
+        source: "parameter",
+      };
+
+      const result = await refreshSsoToken(resolution);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toContain("AWS CLI not found in trusted location");
+    });
   });
 });

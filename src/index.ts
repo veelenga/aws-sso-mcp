@@ -8,6 +8,10 @@ import {
   SERVER_VERSION,
   TOOL_DESCRIPTION,
   TOOL_NAME,
+  MAX_PROFILE_LENGTH,
+  MAX_SERVER_NAME_LENGTH,
+  PROFILE_NAME_PATTERN,
+  PROFILE_NAME_PATTERN_ERROR,
 } from "./constants.js";
 import { refreshSsoToken, type ProfileResolution } from "./aws-sso.js";
 import { getProfileFromMcpConfig } from "./aws-config.js";
@@ -67,12 +71,15 @@ function createServer(): McpServer {
     {
       profile: z
         .string()
+        .max(MAX_PROFILE_LENGTH, `Profile name too long (max ${MAX_PROFILE_LENGTH} characters)`)
+        .regex(PROFILE_NAME_PATTERN, PROFILE_NAME_PATTERN_ERROR)
         .optional()
         .describe(
           "AWS profile name to refresh SSO token for. Takes precedence over 'server' parameter."
         ),
       server: z
         .string()
+        .max(MAX_SERVER_NAME_LENGTH, `Server name too long (max ${MAX_SERVER_NAME_LENGTH} characters)`)
         .optional()
         .describe(
           "MCP server name to look up AWS_PROFILE from MCP config files. " +

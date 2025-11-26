@@ -6,6 +6,10 @@ import {
   TOOL_DESCRIPTION,
   SSO_LOGIN_TIMEOUT_MS,
   TRUSTED_PATH_PREFIXES,
+  MAX_PROFILE_LENGTH,
+  MAX_SERVER_NAME_LENGTH,
+  PROFILE_NAME_PATTERN,
+  PROFILE_NAME_PATTERN_ERROR,
 } from "../constants.js";
 
 describe("constants", () => {
@@ -34,5 +38,21 @@ describe("constants", () => {
     expect(TRUSTED_PATH_PREFIXES.length).toBeGreaterThan(0);
     expect(TRUSTED_PATH_PREFIXES).toContain("/usr/local/bin");
     expect(TRUSTED_PATH_PREFIXES).toContain("/usr/bin");
+  });
+
+  it("has input validation constants", () => {
+    expect(MAX_PROFILE_LENGTH).toBe(128);
+    expect(MAX_SERVER_NAME_LENGTH).toBe(128);
+    expect(PROFILE_NAME_PATTERN).toBeInstanceOf(RegExp);
+    expect(PROFILE_NAME_PATTERN_ERROR).toBeTruthy();
+  });
+
+  it("validates profile names correctly", () => {
+    expect(PROFILE_NAME_PATTERN.test("valid-profile")).toBe(true);
+    expect(PROFILE_NAME_PATTERN.test("valid_profile")).toBe(true);
+    expect(PROFILE_NAME_PATTERN.test("ValidProfile123")).toBe(true);
+    expect(PROFILE_NAME_PATTERN.test("invalid profile")).toBe(false);
+    expect(PROFILE_NAME_PATTERN.test("invalid;profile")).toBe(false);
+    expect(PROFILE_NAME_PATTERN.test("")).toBe(false);
   });
 });

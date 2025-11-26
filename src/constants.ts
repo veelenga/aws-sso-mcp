@@ -3,6 +3,13 @@ export const SERVER_VERSION = "1.0.0";
 
 export const TOOL_NAME = "refresh_aws_sso_token";
 
+// Input validation constraints
+export const MAX_PROFILE_LENGTH = 128;
+export const MAX_SERVER_NAME_LENGTH = 128;
+export const PROFILE_NAME_PATTERN = /^[a-zA-Z0-9_-]+$/;
+export const PROFILE_NAME_PATTERN_ERROR =
+  "Profile name can only contain letters, numbers, underscores, and hyphens";
+
 export const TOOL_DESCRIPTION =
   "Initiates AWS SSO login flow to refresh expired authentication tokens. " +
   "This will open a browser window for the user to complete authentication. " +

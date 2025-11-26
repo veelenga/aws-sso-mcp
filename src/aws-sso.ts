@@ -2,24 +2,32 @@ import { spawn, execSync } from "node:child_process";
 import { existsSync, realpathSync } from "node:fs";
 import { SSO_LOGIN_TIMEOUT_MS, TRUSTED_PATH_PREFIXES } from "./constants.js";
 
-// Minimal environment for spawned processes to prevent env injection attacks
-// (e.g., LD_PRELOAD, DYLD_INSERT_LIBRARIES)
-function getMinimalEnv(sanitizedPath: string): NodeJS.ProcessEnv {
-  const isWindows = process.platform === "win32";
-  const env: NodeJS.ProcessEnv = {
+const IS_WINDOWS = process.platform === "win32";
+const PATH_SEPARATOR = IS_WINDOWS ? "\\" : "/";
+const PATH_LIST_SEPARATOR = IS_WINDOWS ? ";" : ":";
+
+/**
+ * Creates a minimal environment for spawned processes to prevent env injection attacks
+ * (e.g., LD_PRELOAD, DYLD_INSERT_LIBRARIES)
+ */
+function createMinimalEnv(sanitizedPath: string): NodeJS.ProcessEnv {
+  const baseEnv: NodeJS.ProcessEnv = {
     PATH: sanitizedPath,
     HOME: process.env.HOME,
     USER: process.env.USER,
     SHELL: process.env.SHELL,
   };
 
-  if (isWindows) {
-    env.SYSTEMROOT = process.env.SYSTEMROOT;
-    env.COMSPEC = process.env.COMSPEC;
-    env.USERPROFILE = process.env.USERPROFILE;
+  if (IS_WINDOWS) {
+    return {
+      ...baseEnv,
+      SYSTEMROOT: process.env.SYSTEMROOT,
+      COMSPEC: process.env.COMSPEC,
+      USERPROFILE: process.env.USERPROFILE,
+    };
   }
 
-  return env;
+  return baseEnv;
 }
 
 export type ProfileSource = "parameter" | "mcp_config";
@@ -39,30 +47,44 @@ export interface SsoRefreshResult {
 let cachedAwsCliPath: string | null = null;
 let cachedSanitizedPath: string | null = null;
 
-function isTrustedPath(path: string): boolean {
-  const normalizedPath = path.toLowerCase();
-  return TRUSTED_PATH_PREFIXES.some((prefix) =>
-    normalizedPath.startsWith(prefix.toLowerCase())
-  );
+/**
+ * Checks if a file path is under a trusted directory prefix.
+ * Prevents path prefix bypass attacks (e.g., /usr/local/bin-malicious matching /usr/local/bin)
+ */
+function isTrustedPath(filePath: string): boolean {
+  // Only use case-insensitive comparison on Windows
+  const normalizedPath = IS_WINDOWS ? filePath.toLowerCase() : filePath;
+
+  return TRUSTED_PATH_PREFIXES.some((prefix) => {
+    const normalizedPrefix = IS_WINDOWS ? prefix.toLowerCase() : prefix;
+
+    return (
+      normalizedPath === normalizedPrefix ||
+      normalizedPath.startsWith(normalizedPrefix + PATH_SEPARATOR)
+    );
+  });
 }
 
+const AWS_PATH_LOOKUP_COMMAND = IS_WINDOWS ? "where aws" : "which aws";
+const AWS_PATH_LOOKUP_TIMEOUT_MS = 5000;
+
+/**
+ * Resolves the AWS CLI path from trusted locations only.
+ * Validates both the initial path and resolved symlink target are trusted.
+ */
 function resolveAwsCliPath(): string | null {
   if (cachedAwsCliPath) {
     return cachedAwsCliPath;
   }
 
   try {
-    const isWindows = process.platform === "win32";
-    const command = isWindows ? "where aws" : "which aws";
-
-    // Use a sanitized PATH with only trusted directories
-    const sanitizedPath = TRUSTED_PATH_PREFIXES.join(isWindows ? ";" : ":");
+    const sanitizedPath = TRUSTED_PATH_PREFIXES.join(PATH_LIST_SEPARATOR);
     cachedSanitizedPath = sanitizedPath;
 
-    const result = execSync(command, {
+    const result = execSync(AWS_PATH_LOOKUP_COMMAND, {
       encoding: "utf-8",
-      env: getMinimalEnv(sanitizedPath),
-      timeout: 5000,
+      env: createMinimalEnv(sanitizedPath),
+      timeout: AWS_PATH_LOOKUP_TIMEOUT_MS,
     }).trim();
 
     // On Windows, 'where' may return multiple lines; take the first
@@ -117,15 +139,13 @@ export async function refreshSsoToken(
   }
 
   return new Promise((resolve) => {
-    // Use minimal environment to prevent env injection attacks
-    const sanitizedPath = cachedSanitizedPath ?? TRUSTED_PATH_PREFIXES.join(
-      process.platform === "win32" ? ";" : ":"
-    );
+    const sanitizedPath =
+      cachedSanitizedPath ?? TRUSTED_PATH_PREFIXES.join(PATH_LIST_SEPARATOR);
 
     const loginProcess = spawn(awsCliPath, ["sso", "login", "--profile", profile], {
       stdio: ["ignore", "pipe", "pipe"],
       detached: false,
-      env: getMinimalEnv(sanitizedPath),
+      env: createMinimalEnv(sanitizedPath),
     });
 
     const timeout = setTimeout(() => {

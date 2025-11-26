@@ -11,20 +11,15 @@ import {
   TOOL_DESCRIPTION,
   TOOL_NAME,
 } from "./constants.js";
-import { refreshSsoToken, type ProfileSource } from "./aws-sso.js";
+import { refreshSsoToken, type ProfileResolution } from "./aws-sso.js";
 import { getProfileFromMcpConfig } from "./aws-config.js";
-
-interface ResolvedProfile {
-  profile: string;
-  source: ProfileSource;
-}
 
 interface ResolveProfileOptions {
   profile?: string;
   server?: string;
 }
 
-async function resolveProfile(options: ResolveProfileOptions): Promise<ResolvedProfile> {
+async function resolveProfile(options: ResolveProfileOptions): Promise<ProfileResolution> {
   const { profile, server } = options;
 
   if (profile) {
@@ -32,9 +27,14 @@ async function resolveProfile(options: ResolveProfileOptions): Promise<ResolvedP
   }
 
   if (server) {
-    const mcpProfile = await getProfileFromMcpConfig(server);
-    if (mcpProfile) {
-      return { profile: mcpProfile, source: "mcp_config" };
+    const result = await getProfileFromMcpConfig(server);
+    if (result) {
+      return {
+        profile: result.profile,
+        source: "mcp_config",
+        configPath: result.configPath,
+        mcpClient: result.client,
+      };
     }
   }
 
@@ -66,13 +66,13 @@ function createServer(): McpServer {
         .string()
         .optional()
         .describe(
-          "MCP server name to look up AWS_PROFILE from .mcp.json. " +
+          "MCP server name to look up AWS_PROFILE from MCP config files. " +
             "Use this when an MCP tool fails due to expired SSO token (e.g., 'bedrock-kb')."
         ),
     },
     async ({ profile, server: serverName }) => {
-      const resolved = await resolveProfile({ profile, server: serverName });
-      const result = await refreshSsoToken(resolved.profile, resolved.source);
+      const resolution = await resolveProfile({ profile, server: serverName });
+      const result = await refreshSsoToken(resolution);
 
       return {
         content: [

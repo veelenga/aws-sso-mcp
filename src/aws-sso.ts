@@ -3,17 +3,28 @@ import { SSO_LOGIN_TIMEOUT_MS } from "./constants.js";
 
 export type ProfileSource = "parameter" | "mcp_config" | "environment" | "fallback";
 
+export interface ProfileResolution {
+  profile: string;
+  source: ProfileSource;
+  configPath?: string;
+  mcpClient?: string;
+}
+
 export interface SsoRefreshResult {
   success: boolean;
   profile: string;
   profileSource: ProfileSource;
+  configPath?: string;
+  mcpClient?: string;
   message: string;
 }
 
 export async function refreshSsoToken(
-  profile: string,
-  profileSource: ProfileSource
+  resolution: ProfileResolution
 ): Promise<SsoRefreshResult> {
+  const { profile, source, configPath, mcpClient } = resolution;
+  const baseResult = { profile, profileSource: source, configPath, mcpClient };
+
   return new Promise((resolve) => {
     const loginProcess = spawn("aws", ["sso", "login", "--profile", profile], {
       stdio: ["ignore", "pipe", "pipe"],
@@ -34,9 +45,8 @@ export async function refreshSsoToken(
     const timeout = setTimeout(() => {
       loginProcess.kill();
       resolve({
+        ...baseResult,
         success: false,
-        profile,
-        profileSource,
         message:
           `SSO login timed out after ${SSO_LOGIN_TIMEOUT_MS / 1000} seconds. ` +
           "Please complete the browser authentication.",
@@ -48,16 +58,14 @@ export async function refreshSsoToken(
 
       if (code === 0) {
         resolve({
+          ...baseResult,
           success: true,
-          profile,
-          profileSource,
           message: `Successfully refreshed SSO token for profile "${profile}". ${stdout}`.trim(),
         });
       } else {
         resolve({
+          ...baseResult,
           success: false,
-          profile,
-          profileSource,
           message: `SSO login failed for profile "${profile}": ${stderr || stdout}`.trim(),
         });
       }
@@ -66,9 +74,8 @@ export async function refreshSsoToken(
     loginProcess.on("error", (error) => {
       clearTimeout(timeout);
       resolve({
+        ...baseResult,
         success: false,
-        profile,
-        profileSource,
         message: `Failed to start SSO login: ${error.message}`,
       });
     });

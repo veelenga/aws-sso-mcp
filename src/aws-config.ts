@@ -1,38 +1,50 @@
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import { homedir } from "node:os";
-import { join } from "node:path";
+import { getMcpConfigLocations, type McpConfigLocation } from "./mcp-config-locations.js";
 
-const MCP_CONFIG_FILENAME = ".mcp.json";
-
-const DEFAULT_SEARCH_PATHS = [
-  process.cwd(),
-  join(process.cwd(), ".."),
-  homedir(),
-];
+export interface ProfileLookupResult {
+  profile: string;
+  configPath: string;
+  client: string;
+}
 
 export async function getProfileFromMcpConfig(
+  serverName: string
+): Promise<ProfileLookupResult | null> {
+  const locations = getMcpConfigLocations();
+
+  for (const location of locations) {
+    const result = await tryGetProfileFromConfig(serverName, location);
+    if (result) {
+      return result;
+    }
+  }
+
+  return null;
+}
+
+async function tryGetProfileFromConfig(
   serverName: string,
-  searchPaths: string[] = DEFAULT_SEARCH_PATHS
-): Promise<string | null> {
-  for (const basePath of searchPaths) {
-    const configPath = join(basePath, MCP_CONFIG_FILENAME);
+  location: McpConfigLocation
+): Promise<ProfileLookupResult | null> {
+  if (!existsSync(location.path)) {
+    return null;
+  }
 
-    if (!existsSync(configPath)) {
-      continue;
+  try {
+    const content = await readFile(location.path, "utf-8");
+    const config = JSON.parse(content);
+    const profile = config?.mcpServers?.[serverName]?.env?.AWS_PROFILE;
+
+    if (profile) {
+      return {
+        profile,
+        configPath: location.path,
+        client: location.client,
+      };
     }
-
-    try {
-      const content = await readFile(configPath, "utf-8");
-      const config = JSON.parse(content);
-      const profile = config?.mcpServers?.[serverName]?.env?.AWS_PROFILE;
-
-      if (profile) {
-        return profile;
-      }
-    } catch {
-      // Skip invalid config files
-    }
+  } catch {
+    // Skip invalid config files
   }
 
   return null;

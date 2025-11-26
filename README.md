@@ -2,6 +2,14 @@
 
 A Model Context Protocol (MCP) server for refreshing AWS SSO authentication tokens. Works with multiple MCP clients including Claude Desktop, Claude Code, Cursor, VS Code, Gemini CLI, and more.
 
+## How It Works
+
+1. When AWS operations fail due to expired SSO tokens, Claude detects the error
+2. Claude calls `refresh_aws_sso_token` with the appropriate profile or server name
+3. The server looks up the AWS profile from MCP config files (if `server` is provided)
+4. A browser window opens for SSO authentication
+5. Once authenticated, the original operation can be retried
+
 ## Supported MCP Clients
 
 The server automatically detects AWS profile settings from the following MCP clients:
@@ -48,21 +56,10 @@ Add to your configuration file:
   "mcpServers": {
     "aws-sso": {
       "command": "npx",
-      "args": ["-y", "aws-sso-mcp"],
-      "env": {
-        "AWS_PROFILE": "your-sso-profile"
-      }
+      "args": ["-y", "aws-sso-mcp"]
     }
   }
 }
-```
-
-The `AWS_PROFILE` environment variable is used by the AWS CLI during SSO login. Configure it to match your SSO profile name.
-
-### npx
-
-```bash
-npx aws-sso-mcp
 ```
 
 ## Tool
@@ -93,14 +90,6 @@ Initiates the AWS SSO login flow to refresh expired authentication tokens. Opens
   "message": "Successfully refreshed SSO token for profile \"MCPServerReadAccess\"."
 }
 ```
-
-## How It Works
-
-1. When AWS operations fail due to expired SSO tokens, Claude detects the error
-2. Claude calls `refresh_aws_sso_token` with the appropriate profile or server name
-3. The server looks up the AWS profile from MCP config files (if `server` is provided)
-4. A browser window opens for SSO authentication
-5. Once authenticated, the original operation can be retried
 
 ## Bundled Skill
 

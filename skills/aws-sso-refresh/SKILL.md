@@ -19,59 +19,98 @@ Activate this skill when you encounter AWS SSO token expiration errors, such as:
 
 ## How to Refresh
 
-Run the AWS CLI command to initiate SSO login:
+Use the `mcp__aws-sso__refresh_aws_sso_token` tool. It automatically:
 
-```bash
-aws sso login --profile <profile-name>
+1. Looks up the correct AWS profile from MCP config files
+2. Initiates the SSO login flow
+3. Opens a browser for authentication
+
+### Option 1: Pass the Server Name (Recommended)
+
+When an MCP tool fails, pass the server name to automatically find the correct profile:
+
+```
+mcp__aws-sso__refresh_aws_sso_token(server: "bedrock-kb")
 ```
 
-**What happens:**
+The tool searches multiple MCP client configs (Claude Code, Claude Desktop, Cursor, VS Code, Gemini CLI, etc.) to find the `AWS_PROFILE` for that server.
 
-1. Opens a browser window for SSO authentication
-2. User completes authentication in the browser
-3. Token is refreshed and cached locally
-4. Original operation can be retried
+### Option 2: Pass the Profile Directly
+
+If you know the profile name:
+
+```
+mcp__aws-sso__refresh_aws_sso_token(profile: "MCPServerReadAccess")
+```
+
+**Note:** At least one of `server` or `profile` must be provided. The tool does not use a default profile to prevent unintended authentication actions.
 
 ## Workflow
 
-When an AWS operation fails due to expired tokens:
+When an AWS MCP operation fails due to expired tokens:
 
-1. **Identify the error**: Look for token expiration messages in the error
-2. **Determine the profile**: Check which AWS profile was being used (look for `AWS_PROFILE` in MCP server config)
-3. **Run the refresh command**: `aws sso login --profile <profile-name>`
-4. **Wait for authentication**: Inform the user to complete browser authentication
+1. **Identify the failing MCP server**: Note which tool failed (e.g., `mcp__bedrock-kb__*` → server is `bedrock-kb`)
+
+2. **Call the refresh tool** with the server name:
+   ```
+   mcp__aws-sso__refresh_aws_sso_token(server: "bedrock-kb")
+   ```
+
+3. **Inform the user**: "Your AWS SSO session has expired. Please complete the authentication in your browser."
+
+4. **Wait for completion**: The tool will return success/failure status
+
 5. **Retry the operation**: Once refreshed, retry the original AWS operation
 
-## Example Interaction
+## Example
 
-**User runs a Bedrock KB query that fails:**
+**Tool `mcp__bedrock-kb__ListKnowledgeBases` fails:**
 
 ```
 Error: Token has expired and refresh failed
 ```
 
-**You should:**
+**Response:**
 
-1. Recognize this as an SSO expiration error
-2. Check the MCP server config for the AWS_PROFILE (e.g., `MCPServerReadAccess`)
-3. Run: `aws sso login --profile MCPServerReadAccess`
-4. Inform the user: "Your AWS SSO session has expired. I'm initiating a refresh - please complete the authentication in your browser."
-5. After success, retry the original query
+```
+mcp__aws-sso__refresh_aws_sso_token(server: "bedrock-kb")
+```
 
-## Common Profiles
+**Result:**
 
-When working with AWS MCP servers, check their configuration for the profile name:
+```json
+{
+  "success": true,
+  "profile": "MCPServerReadAccess",
+  "profileSource": "mcp_config",
+  "message": "Successfully refreshed SSO token for profile \"MCPServerReadAccess\"."
+}
+```
 
-- `MCPServerReadAccess` - Common profile for read-only MCP access
-- `default` - Default AWS profile
-- Custom profiles as configured in `~/.aws/config`
+Then retry `ListKnowledgeBases`.
+
+## Supported MCP Clients
+
+The tool automatically searches these config locations:
+
+| Client | Config Location |
+|--------|-----------------|
+| Claude Code | `.mcp.json` |
+| Claude Desktop | Platform app support directory |
+| Cursor | `.cursor/mcp.json` |
+| VS Code | `.vscode/mcp.json` |
+| Gemini CLI | `.gemini/settings.json` |
+| Copilot CLI | `~/.copilot/mcp-config.json` |
+| Amazon Q | `~/.aws/amazonq/mcp.json` |
+| Cline | VS Code extension settings |
 
 ## Proactive Behavior
 
-- Automatically detect token expiration errors without being asked
-- Suggest refreshing when you see authentication failures
-- Remember which profile was used for retry operations
-- Keep the user informed about the authentication status
+- Automatically detect token expiration errors
+- Use the `server` parameter to find the correct profile automatically
+- If profile lookup fails, **always ask the user** which profile to use before retrying
+- Never call the tool without a `server` or `profile` parameter
+- Keep the user informed about authentication status
 
 ## Important Notes
 
@@ -79,3 +118,4 @@ When working with AWS MCP servers, check their configuration for the profile nam
 - Tokens typically expire after several hours
 - Multiple MCP servers may share the same profile
 - After refresh, all servers using that profile will work again
+- The tool has a 2-minute timeout for browser authentication

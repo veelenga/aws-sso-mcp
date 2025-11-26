@@ -24,6 +24,8 @@ function createMockProcess() {
 function setupAwsCliMock(path: string = MOCK_AWS_PATH) {
   vi.mocked(childProcess.execSync).mockReturnValue(path);
   vi.mocked(fs.existsSync).mockReturnValue(true);
+  // Mock realpathSync to return the same path (no symlink)
+  vi.mocked(fs.realpathSync).mockReturnValue(path);
 }
 
 describe("refreshSsoToken", () => {
@@ -215,6 +217,7 @@ describe("refreshSsoToken", () => {
       clearAwsCliPathCache();
       vi.mocked(childProcess.execSync).mockReturnValue("/usr/bin/aws");
       vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.realpathSync).mockReturnValue("/usr/bin/aws");
 
       const mockProcess = createMockProcess();
       vi.mocked(childProcess.spawn).mockReturnValue(mockProcess);
@@ -237,6 +240,7 @@ describe("refreshSsoToken", () => {
       clearAwsCliPathCache();
       vi.mocked(childProcess.execSync).mockReturnValue("/opt/homebrew/bin/aws");
       vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.realpathSync).mockReturnValue("/opt/homebrew/bin/aws");
 
       const mockProcess = createMockProcess();
       vi.mocked(childProcess.spawn).mockReturnValue(mockProcess);
@@ -277,6 +281,24 @@ describe("refreshSsoToken", () => {
 
       // execSync should only be called once due to caching
       expect(childProcess.execSync).toHaveBeenCalledTimes(1);
+    });
+
+    it("rejects symlinks pointing to untrusted locations", async () => {
+      clearAwsCliPathCache();
+      vi.mocked(childProcess.execSync).mockReturnValue("/usr/local/bin/aws");
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      // Symlink resolves to untrusted location
+      vi.mocked(fs.realpathSync).mockReturnValue("/tmp/malicious/aws");
+
+      const resolution: ProfileResolution = {
+        profile: "test-profile",
+        source: "parameter",
+      };
+
+      const result = await refreshSsoToken(resolution);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toContain("AWS CLI not found in trusted location");
     });
   });
 });

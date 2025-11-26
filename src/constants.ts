@@ -15,10 +15,15 @@ export const SSO_LOGIN_TIMEOUT_MS = 120_000;
 export const TRUSTED_PATH_PREFIXES = [
   // macOS / Linux standard paths
   "/usr/local/bin",
+  "/usr/local/aws-cli", // Official AWS CLI v2 installer location
   "/usr/bin",
   "/bin",
+  // Homebrew paths (bin directories and Cellar for symlink resolution)
   "/opt/homebrew/bin", // macOS ARM Homebrew
+  "/opt/homebrew/Cellar", // macOS ARM Homebrew packages
+  "/usr/local/Cellar", // macOS Intel Homebrew packages
   "/home/linuxbrew/.linuxbrew/bin", // Linux Homebrew
+  "/home/linuxbrew/.linuxbrew/Cellar", // Linux Homebrew packages
   // Windows standard paths
   "C:\\Program Files\\Amazon\\AWSCLIV2",
   "C:\\Program Files (x86)\\Amazon\\AWSCLIV2",

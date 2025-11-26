@@ -132,6 +132,16 @@ npx @modelcontextprotocol/inspector node dist/index.js
 - AWS CLI v2 installed and configured with SSO profiles
 - An AWS SSO profile configured in `~/.aws/config`
 
+## Security
+
+The server implements several security measures:
+
+- **Explicit profile selection**: Requires `profile` or `server` parameter to prevent unintended authentication actions
+- **Trusted AWS CLI paths**: Only executes AWS CLI from system directories (`/usr/bin`, `/usr/local/bin`, `/opt/homebrew/bin`)
+- **Symlink validation**: Resolves symlinks and verifies the real path is also in a trusted location
+- **Minimal environment**: Spawns processes with a sanitized environment to prevent injection attacks (e.g., `LD_PRELOAD`)
+- **No secrets in responses**: CLI output is not included in responses to prevent leaking device codes or URLs
+
 ## License
 
 MIT

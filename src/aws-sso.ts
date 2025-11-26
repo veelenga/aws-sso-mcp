@@ -1,6 +1,26 @@
 import { spawn, execSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, realpathSync } from "node:fs";
 import { SSO_LOGIN_TIMEOUT_MS, TRUSTED_PATH_PREFIXES } from "./constants.js";
+
+// Minimal environment for spawned processes to prevent env injection attacks
+// (e.g., LD_PRELOAD, DYLD_INSERT_LIBRARIES)
+function getMinimalEnv(sanitizedPath: string): NodeJS.ProcessEnv {
+  const isWindows = process.platform === "win32";
+  const env: NodeJS.ProcessEnv = {
+    PATH: sanitizedPath,
+    HOME: process.env.HOME,
+    USER: process.env.USER,
+    SHELL: process.env.SHELL,
+  };
+
+  if (isWindows) {
+    env.SYSTEMROOT = process.env.SYSTEMROOT;
+    env.COMSPEC = process.env.COMSPEC;
+    env.USERPROFILE = process.env.USERPROFILE;
+  }
+
+  return env;
+}
 
 export type ProfileSource = "parameter" | "mcp_config";
 
@@ -17,6 +37,14 @@ export interface SsoRefreshResult {
 }
 
 let cachedAwsCliPath: string | null = null;
+let cachedSanitizedPath: string | null = null;
+
+function isTrustedPath(path: string): boolean {
+  const normalizedPath = path.toLowerCase();
+  return TRUSTED_PATH_PREFIXES.some((prefix) =>
+    normalizedPath.startsWith(prefix.toLowerCase())
+  );
+}
 
 function resolveAwsCliPath(): string | null {
   if (cachedAwsCliPath) {
@@ -29,10 +57,11 @@ function resolveAwsCliPath(): string | null {
 
     // Use a sanitized PATH with only trusted directories
     const sanitizedPath = TRUSTED_PATH_PREFIXES.join(isWindows ? ";" : ":");
+    cachedSanitizedPath = sanitizedPath;
 
     const result = execSync(command, {
       encoding: "utf-8",
-      env: { ...process.env, PATH: sanitizedPath },
+      env: getMinimalEnv(sanitizedPath),
       timeout: 5000,
     }).trim();
 
@@ -43,18 +72,28 @@ function resolveAwsCliPath(): string | null {
       return null;
     }
 
-    // Validate the resolved path is under a trusted prefix
-    const normalizedPath = awsPath.toLowerCase();
-    const isTrusted = TRUSTED_PATH_PREFIXES.some((prefix) =>
-      normalizedPath.startsWith(prefix.toLowerCase())
-    );
-
-    if (!isTrusted) {
+    // Validate the initial path is under a trusted prefix
+    if (!isTrustedPath(awsPath)) {
       return null;
     }
 
-    cachedAwsCliPath = awsPath;
-    return awsPath;
+    // Resolve symlinks to get the real path and verify it's also trusted
+    // This prevents symlink attacks like /usr/local/bin/aws -> /tmp/malicious
+    let realPath: string;
+    try {
+      realPath = realpathSync(awsPath);
+    } catch {
+      // If we can't resolve the real path, reject it
+      return null;
+    }
+
+    // The real path must also be in a trusted location
+    if (!isTrustedPath(realPath)) {
+      return null;
+    }
+
+    cachedAwsCliPath = realPath;
+    return realPath;
   } catch {
     return null;
   }
@@ -78,9 +117,15 @@ export async function refreshSsoToken(
   }
 
   return new Promise((resolve) => {
+    // Use minimal environment to prevent env injection attacks
+    const sanitizedPath = cachedSanitizedPath ?? TRUSTED_PATH_PREFIXES.join(
+      process.platform === "win32" ? ";" : ":"
+    );
+
     const loginProcess = spawn(awsCliPath, ["sso", "login", "--profile", profile], {
       stdio: ["ignore", "pipe", "pipe"],
       detached: false,
+      env: getMinimalEnv(sanitizedPath),
     });
 
     const timeout = setTimeout(() => {
@@ -128,4 +173,5 @@ export async function refreshSsoToken(
 // Exported for testing
 export function clearAwsCliPathCache(): void {
   cachedAwsCliPath = null;
+  cachedSanitizedPath = null;
 }

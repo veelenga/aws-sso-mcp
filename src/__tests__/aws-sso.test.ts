@@ -120,7 +120,7 @@ describe("refreshSsoToken", () => {
 
     const resolution: ProfileResolution = {
       profile: "bad-profile",
-      source: "environment",
+      source: "parameter",
     };
 
     const resultPromise = refreshSsoToken(resolution);
@@ -130,7 +130,7 @@ describe("refreshSsoToken", () => {
 
     expect(result.success).toBe(false);
     expect(result.profile).toBe("bad-profile");
-    expect(result.profileSource).toBe("environment");
+    expect(result.profileSource).toBe("parameter");
     expect(result.message).toContain("failed");
     expect(result.message).toContain("check that the profile exists");
     expect(result.message).not.toContain("Error:");
@@ -142,7 +142,7 @@ describe("refreshSsoToken", () => {
 
     const resolution: ProfileResolution = {
       profile: "test-profile",
-      source: "fallback",
+      source: "mcp_config",
     };
 
     const resultPromise = refreshSsoToken(resolution);
@@ -151,7 +151,7 @@ describe("refreshSsoToken", () => {
     const result = await resultPromise;
 
     expect(result.success).toBe(false);
-    expect(result.profileSource).toBe("fallback");
+    expect(result.profileSource).toBe("mcp_config");
     expect(result.message).toContain("Failed to start AWS CLI");
   });
 

@@ -57,7 +57,7 @@ Add to your configuration file:
 }
 ```
 
-The `AWS_PROFILE` environment variable sets the default profile for the refresh tool. If not specified, defaults to `"default"`.
+The `AWS_PROFILE` environment variable is used by the AWS CLI during SSO login. Configure it to match your SSO profile name.
 
 ### npx
 
@@ -73,15 +73,15 @@ Initiates the AWS SSO login flow to refresh expired authentication tokens. Opens
 
 | Parameter | Type   | Required | Description                           |
 | --------- | ------ | -------- | ------------------------------------- |
-| profile   | string | No       | AWS profile name to refresh token for. Takes precedence over `server` parameter. |
-| server    | string | No       | MCP server name to look up AWS_PROFILE from MCP config files (e.g., `bedrock-kb`). |
+| profile   | string | No*      | AWS profile name to refresh token for. Takes precedence over `server` parameter. |
+| server    | string | No*      | MCP server name to look up AWS_PROFILE from MCP config files (e.g., `bedrock-kb`). |
+
+*At least one of `profile` or `server` must be provided.
 
 **Profile resolution order:**
 
 1. Explicit `profile` parameter
 2. Look up from MCP config files by `server` name
-3. `$AWS_PROFILE` environment variable
-4. Fallback to `"default"`
 
 **Example response:**
 

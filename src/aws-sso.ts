@@ -2,7 +2,7 @@ import { spawn, execSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { SSO_LOGIN_TIMEOUT_MS, TRUSTED_PATH_PREFIXES } from "./constants.js";
 
-export type ProfileSource = "parameter" | "mcp_config" | "environment" | "fallback";
+export type ProfileSource = "parameter" | "mcp_config";
 
 export interface ProfileResolution {
   profile: string;

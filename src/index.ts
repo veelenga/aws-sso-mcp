@@ -4,8 +4,6 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import {
-  AWS_PROFILE_ENV_VAR,
-  FALLBACK_AWS_PROFILE,
   SERVER_NAME,
   SERVER_VERSION,
   TOOL_DESCRIPTION,
@@ -19,29 +17,42 @@ interface ResolveProfileOptions {
   server?: string;
 }
 
-async function resolveProfile(options: ResolveProfileOptions): Promise<ProfileResolution> {
+type ResolveProfileResult =
+  | { success: true; resolution: ProfileResolution }
+  | { success: false; error: string };
+
+async function resolveProfile(options: ResolveProfileOptions): Promise<ResolveProfileResult> {
   const { profile, server } = options;
 
   if (profile) {
-    return { profile, source: "parameter" };
+    return { success: true, resolution: { profile, source: "parameter" } };
   }
 
   if (server) {
     const result = await getProfileFromMcpConfig(server);
     if (result) {
       return {
-        profile: result.profile,
-        source: "mcp_config",
+        success: true,
+        resolution: {
+          profile: result.profile,
+          source: "mcp_config",
+        },
       };
     }
+    return {
+      success: false,
+      error:
+        `Could not find AWS_PROFILE for MCP server "${server}" in any config file. ` +
+        "Please specify the 'profile' parameter directly.",
+    };
   }
 
-  const envProfile = process.env[AWS_PROFILE_ENV_VAR];
-  if (envProfile) {
-    return { profile: envProfile, source: "environment" };
-  }
-
-  return { profile: FALLBACK_AWS_PROFILE, source: "fallback" };
+  return {
+    success: false,
+    error:
+      "No profile specified. Please provide either 'profile' (AWS profile name) " +
+      "or 'server' (MCP server name to look up profile from config).",
+  };
 }
 
 function createServer(): McpServer {
@@ -69,8 +80,24 @@ function createServer(): McpServer {
         ),
     },
     async ({ profile, server: serverName }) => {
-      const resolution = await resolveProfile({ profile, server: serverName });
-      const result = await refreshSsoToken(resolution);
+      const resolveResult = await resolveProfile({ profile, server: serverName });
+
+      if (!resolveResult.success) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(
+                { success: false, message: resolveResult.error },
+                null,
+                2
+              ),
+            },
+          ],
+        };
+      }
+
+      const result = await refreshSsoToken(resolveResult.resolution);
 
       return {
         content: [

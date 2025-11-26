@@ -43,13 +43,7 @@ If you know the profile name:
 mcp__aws-sso__refresh_aws_sso_token(profile: "MCPServerReadAccess")
 ```
 
-### Option 3: Use Default Profile
-
-Call without parameters to use `$AWS_PROFILE` env var or fall back to `"default"`:
-
-```
-mcp__aws-sso__refresh_aws_sso_token()
-```
+**Note:** At least one of `server` or `profile` must be provided. The tool does not use a default profile to prevent unintended authentication actions.
 
 ## Workflow
 
@@ -114,7 +108,8 @@ The tool automatically searches these config locations:
 
 - Automatically detect token expiration errors
 - Use the `server` parameter to find the correct profile automatically
-- If profile lookup fails, ask the user which profile to use
+- If profile lookup fails, **always ask the user** which profile to use before retrying
+- Never call the tool without a `server` or `profile` parameter
 - Keep the user informed about authentication status
 
 ## Important Notes

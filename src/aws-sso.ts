@@ -31,17 +31,6 @@ export async function refreshSsoToken(
       detached: false,
     });
 
-    let stdout = "";
-    let stderr = "";
-
-    loginProcess.stdout?.on("data", (data: Buffer) => {
-      stdout += data.toString();
-    });
-
-    loginProcess.stderr?.on("data", (data: Buffer) => {
-      stderr += data.toString();
-    });
-
     const timeout = setTimeout(() => {
       loginProcess.kill();
       resolve({
@@ -60,13 +49,15 @@ export async function refreshSsoToken(
         resolve({
           ...baseResult,
           success: true,
-          message: `Successfully refreshed SSO token for profile "${profile}". ${stdout}`.trim(),
+          message: `Successfully refreshed SSO token for profile "${profile}".`,
         });
       } else {
         resolve({
           ...baseResult,
           success: false,
-          message: `SSO login failed for profile "${profile}": ${stderr || stdout}`.trim(),
+          message:
+            `SSO login failed for profile "${profile}". ` +
+            "Please check that the profile exists and is configured for SSO.",
         });
       }
     });
@@ -76,7 +67,7 @@ export async function refreshSsoToken(
       resolve({
         ...baseResult,
         success: false,
-        message: `Failed to start SSO login: ${error.message}`,
+        message: `Failed to start AWS CLI: ${error.message}`,
       });
     });
   });

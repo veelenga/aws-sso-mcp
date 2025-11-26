@@ -7,16 +7,14 @@ vi.mock("node:child_process");
 
 function createMockProcess() {
   const mockProcess = new EventEmitter() as ReturnType<typeof childProcess.spawn>;
-  const mockStdout = new EventEmitter();
-  const mockStderr = new EventEmitter();
 
   Object.assign(mockProcess, {
-    stdout: mockStdout,
-    stderr: mockStderr,
+    stdout: new EventEmitter(),
+    stderr: new EventEmitter(),
     kill: vi.fn(),
   });
 
-  return { mockProcess, mockStdout, mockStderr };
+  return mockProcess;
 }
 
 describe("refreshSsoToken", () => {
@@ -30,7 +28,7 @@ describe("refreshSsoToken", () => {
   });
 
   it("returns success when login completes successfully", async () => {
-    const { mockProcess, mockStdout } = createMockProcess();
+    const mockProcess = createMockProcess();
     vi.mocked(childProcess.spawn).mockReturnValue(mockProcess);
 
     const resolution: ProfileResolution = {
@@ -39,8 +37,6 @@ describe("refreshSsoToken", () => {
     };
 
     const resultPromise = refreshSsoToken(resolution);
-
-    mockStdout.emit("data", Buffer.from("Successfully logged in"));
     mockProcess.emit("close", 0);
 
     const result = await resultPromise;
@@ -51,8 +47,25 @@ describe("refreshSsoToken", () => {
     expect(result.message).toContain("Successfully refreshed");
   });
 
+  it("does not include CLI output in success message", async () => {
+    const mockProcess = createMockProcess();
+    vi.mocked(childProcess.spawn).mockReturnValue(mockProcess);
+
+    const resolution: ProfileResolution = {
+      profile: "test-profile",
+      source: "parameter",
+    };
+
+    const resultPromise = refreshSsoToken(resolution);
+    mockProcess.emit("close", 0);
+
+    const result = await resultPromise;
+
+    expect(result.message).toBe('Successfully refreshed SSO token for profile "test-profile".');
+  });
+
   it("includes config details in result when provided", async () => {
-    const { mockProcess, mockStdout } = createMockProcess();
+    const mockProcess = createMockProcess();
     vi.mocked(childProcess.spawn).mockReturnValue(mockProcess);
 
     const resolution: ProfileResolution = {
@@ -63,8 +76,6 @@ describe("refreshSsoToken", () => {
     };
 
     const resultPromise = refreshSsoToken(resolution);
-
-    mockStdout.emit("data", Buffer.from("Success"));
     mockProcess.emit("close", 0);
 
     const result = await resultPromise;
@@ -77,7 +88,7 @@ describe("refreshSsoToken", () => {
   });
 
   it("spawns aws sso login with correct arguments", async () => {
-    const { mockProcess } = createMockProcess();
+    const mockProcess = createMockProcess();
     vi.mocked(childProcess.spawn).mockReturnValue(mockProcess);
 
     const resolution: ProfileResolution = {
@@ -96,8 +107,8 @@ describe("refreshSsoToken", () => {
     );
   });
 
-  it("returns failure when login fails with non-zero exit code", async () => {
-    const { mockProcess, mockStderr } = createMockProcess();
+  it("returns generic failure message without CLI output", async () => {
+    const mockProcess = createMockProcess();
     vi.mocked(childProcess.spawn).mockReturnValue(mockProcess);
 
     const resolution: ProfileResolution = {
@@ -106,8 +117,6 @@ describe("refreshSsoToken", () => {
     };
 
     const resultPromise = refreshSsoToken(resolution);
-
-    mockStderr.emit("data", Buffer.from("Profile not found"));
     mockProcess.emit("close", 1);
 
     const result = await resultPromise;
@@ -116,11 +125,12 @@ describe("refreshSsoToken", () => {
     expect(result.profile).toBe("bad-profile");
     expect(result.profileSource).toBe("environment");
     expect(result.message).toContain("failed");
-    expect(result.message).toContain("Profile not found");
+    expect(result.message).toContain("check that the profile exists");
+    expect(result.message).not.toContain("Error:");
   });
 
   it("returns failure on process error", async () => {
-    const { mockProcess } = createMockProcess();
+    const mockProcess = createMockProcess();
     vi.mocked(childProcess.spawn).mockReturnValue(mockProcess);
 
     const resolution: ProfileResolution = {
@@ -129,19 +139,17 @@ describe("refreshSsoToken", () => {
     };
 
     const resultPromise = refreshSsoToken(resolution);
-
-    mockProcess.emit("error", new Error("Command not found"));
+    mockProcess.emit("error", new Error("spawn ENOENT"));
 
     const result = await resultPromise;
 
     expect(result.success).toBe(false);
     expect(result.profileSource).toBe("fallback");
-    expect(result.message).toContain("Failed to start SSO login");
-    expect(result.message).toContain("Command not found");
+    expect(result.message).toContain("Failed to start AWS CLI");
   });
 
   it("returns failure and kills process on timeout", async () => {
-    const { mockProcess } = createMockProcess();
+    const mockProcess = createMockProcess();
     const killMock = mockProcess.kill as ReturnType<typeof vi.fn>;
     vi.mocked(childProcess.spawn).mockReturnValue(mockProcess);
 

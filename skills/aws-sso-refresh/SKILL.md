@@ -89,8 +89,6 @@ mcp__aws-sso__refresh_aws_sso_token(server: "bedrock-kb")
   "success": true,
   "profile": "MCPServerReadAccess",
   "profileSource": "mcp_config",
-  "configPath": "/Users/user/.mcp.json",
-  "mcpClient": "Claude Code",
   "message": "Successfully refreshed SSO token for profile \"MCPServerReadAccess\"."
 }
 ```

@@ -6,24 +6,20 @@ export type ProfileSource = "parameter" | "mcp_config" | "environment" | "fallba
 export interface ProfileResolution {
   profile: string;
   source: ProfileSource;
-  configPath?: string;
-  mcpClient?: string;
 }
 
 export interface SsoRefreshResult {
   success: boolean;
   profile: string;
   profileSource: ProfileSource;
-  configPath?: string;
-  mcpClient?: string;
   message: string;
 }
 
 export async function refreshSsoToken(
   resolution: ProfileResolution
 ): Promise<SsoRefreshResult> {
-  const { profile, source, configPath, mcpClient } = resolution;
-  const baseResult = { profile, profileSource: source, configPath, mcpClient };
+  const { profile, source } = resolution;
+  const baseResult = { profile, profileSource: source };
 
   return new Promise((resolve) => {
     const loginProcess = spawn("aws", ["sso", "login", "--profile", profile], {

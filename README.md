@@ -90,8 +90,6 @@ Initiates the AWS SSO login flow to refresh expired authentication tokens. Opens
   "success": true,
   "profile": "MCPServerReadAccess",
   "profileSource": "mcp_config",
-  "configPath": "/Users/user/.mcp.json",
-  "mcpClient": "Claude Code",
   "message": "Successfully refreshed SSO token for profile \"MCPServerReadAccess\"."
 }
 ```

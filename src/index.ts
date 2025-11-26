@@ -32,8 +32,6 @@ async function resolveProfile(options: ResolveProfileOptions): Promise<ProfileRe
       return {
         profile: result.profile,
         source: "mcp_config",
-        configPath: result.configPath,
-        mcpClient: result.client,
       };
     }
   }

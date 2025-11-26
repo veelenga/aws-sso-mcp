@@ -64,15 +64,13 @@ describe("refreshSsoToken", () => {
     expect(result.message).toBe('Successfully refreshed SSO token for profile "test-profile".');
   });
 
-  it("includes config details in result when provided", async () => {
+  it("returns correct source when profile from mcp_config", async () => {
     const mockProcess = createMockProcess();
     vi.mocked(childProcess.spawn).mockReturnValue(mockProcess);
 
     const resolution: ProfileResolution = {
       profile: "test-profile",
       source: "mcp_config",
-      configPath: "/home/.mcp.json",
-      mcpClient: "Claude Code",
     };
 
     const resultPromise = refreshSsoToken(resolution);
@@ -83,8 +81,6 @@ describe("refreshSsoToken", () => {
     expect(result.success).toBe(true);
     expect(result.profile).toBe("test-profile");
     expect(result.profileSource).toBe("mcp_config");
-    expect(result.configPath).toBe("/home/.mcp.json");
-    expect(result.mcpClient).toBe("Claude Code");
   });
 
   it("spawns aws sso login with correct arguments", async () => {
@@ -156,8 +152,6 @@ describe("refreshSsoToken", () => {
     const resolution: ProfileResolution = {
       profile: "slow-profile",
       source: "mcp_config",
-      configPath: "/test/config.json",
-      mcpClient: "Cursor",
     };
 
     const resultPromise = refreshSsoToken(resolution);
@@ -168,8 +162,6 @@ describe("refreshSsoToken", () => {
 
     expect(result.success).toBe(false);
     expect(result.profileSource).toBe("mcp_config");
-    expect(result.configPath).toBe("/test/config.json");
-    expect(result.mcpClient).toBe("Cursor");
     expect(result.message).toContain("timed out");
     expect(killMock).toHaveBeenCalled();
   });

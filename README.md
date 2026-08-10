@@ -36,16 +36,21 @@ The server automatically detects AWS profile settings from the following MCP cli
 
 Restart Claude Code, then verify with `/mcp`.
 
-### Claude Code (Manual) - WIP
+### Claude Code (Manual)
+
+The package is not published to npm yet, so install from source:
 
 ```bash
-npm install -g aws-sso-mcp
-claude mcp add --scope user aws-sso aws-sso-mcp
+git clone https://github.com/veelenga/aws-sso-mcp.git
+cd aws-sso-mcp
+npm install
+npm run build
+claude mcp add --scope user aws-sso node "$(pwd)/dist/index.js"
 ```
 
 ### Claude Desktop
 
-Add to your configuration file:
+Clone and build the project as shown above, then add to your configuration file:
 
 **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
@@ -55,8 +60,8 @@ Add to your configuration file:
 {
   "mcpServers": {
     "aws-sso": {
-      "command": "npx",
-      "args": ["-y", "aws-sso-mcp"]
+      "command": "node",
+      "args": ["/path/to/aws-sso-mcp/dist/index.js"]
     }
   }
 }
